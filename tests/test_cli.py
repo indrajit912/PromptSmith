@@ -35,3 +35,12 @@ def test_cli_invalid_style():
     assert result.exit_code == 1
     assert "Error:" in result.output
     assert "invalidstyle" in result.output
+
+def test_cli_custom_help():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--help"])
+    assert result.exit_code == 0
+    assert "PROMPTSMITH" in result.output
+    assert "Options & Arguments" in result.output
+    assert "Examples" in result.output
+

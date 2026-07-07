@@ -54,23 +54,50 @@ PromptSmith/
 
 ### Prerequisites
 - Python 3.8 or higher.
+- [pipx](https://github.com/pypa/pipx) (recommended for CLI applications).
 
-### From Source (Developer Mode)
+### Installation via `pipx` (Recommended)
 
-1. Clone or download this project.
-2. Navigate to the project directory:
-   ```powershell
-   cd C:\Users\indra\Documents\hello_world\PromptSmith
+`pipx` installs the package in an isolated environment and exposes the CLI command globally, preventing conflicts with other Python packages.
+
+* **Install the application:**
+  ```bash
+  pipx install git+https://github.com/indrajit912/PromptSmith.git
+  ```
+
+* **Upgrade to the latest version:**
+  ```bash
+  pipx upgrade PromptSmith
+  ```
+
+* **Uninstall the application:**
+  ```bash
+  pipx uninstall PromptSmith
+  ```
+
+### Development Installation (From Source)
+
+If you would like to contribute or run local modifications:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/indrajit912/PromptSmith.git
+   cd PromptSmith
    ```
-3. Install in editable development mode:
+
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   # On Windows (PowerShell):
+   .venv\Scripts\Activate.ps1
+   # On Linux/macOS:
+   source .venv/bin/activate
+   ```
+
+3. Install in editable mode:
    ```bash
    pip install -e .
    ```
-
-Or install all dependencies explicitly:
-```bash
-pip install -r requirements.txt
-```
 
 ---
 

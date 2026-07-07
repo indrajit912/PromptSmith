@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -22,8 +23,94 @@ from promptsmith.utils.clipboard import copy_to_clipboard
 console = Console()
 error_console = Console(stderr=True)
 
+def show_startup_banner() -> None:
+    """Prints a beautiful startup banner to the console."""
+    ascii_art = r"""[bold cyan]
+ ____                           _   ____            _ _   _     
+|  _ \ _ __ ___  _ __ ___  _ __| |_/ ___| _ __ ___ (_) |_| |__  
+| |_) | '__/ _ \| '_ ` _ \| '_ \ __\___ \| '_ ` _ \| | __| '_ \ 
+|  __/| | | (_) | | | | | | |_) | |_ ___) | | | | | | | |_| | | |
+|_|   |_|  \___/|_| |_| |_| .__/ \__|____/|_| |_| |_|_|\__|_| |_|
+                          |_|                                   [/]"""
 
-@click.command(context_settings=dict(help_option_names=["-h", "--help"]))
+    metadata_text = (
+        "\n[bold yellow]PromptSmith CLI[/bold yellow] — [italic white]Craft the perfect prompt[/italic white]\n\n"
+        f"🚀 [bold green]Version:[/] {__version__}\n"
+        f"💻 [bold green]Developer:[/] {__author__}\n"
+        f"🌐 [bold green]Website:[/] [blue underline]{__website__}[/]\n"
+        f"🐙 [bold green]GitHub:[/] [blue underline]https://github.com/indrajit912/PromptSmith[/]\n"
+    )
+
+    # Create a layout grid for side-by-side display
+    grid = Table.grid(expand=True)
+    grid.add_column(ratio=6)  # Left column: ASCII art
+    grid.add_column(ratio=5)  # Right column: details
+    grid.add_row(ascii_art, metadata_text)
+
+    console.print(Panel(
+        grid,
+        title="[bold yellow] Welcome [/bold yellow]",
+        border_style="cyan",
+        padding=(1, 2)
+    ))
+
+def display_custom_help() -> None:
+    """Prints a beautifully styled custom help guide to the console."""
+    help_header = Panel(
+        "[bold cyan]PROMPTSMITH[/bold cyan]\n"
+        "[italic white]- CLI Prompt Preparation Tool -[/italic white]",
+        border_style="cyan",
+        box=box.DOUBLE,
+        expand=False,
+        padding=(1, 10)
+    )
+    console.print(help_header)
+    
+    console.print("\n[bold yellow]Description:[/bold yellow]")
+    console.print("  [white]PromptSmith takes your multi-line raw prompts and formats them using[/white]")
+    console.print("  [white]optimized instructions tailored for different AI chatbots. By default,[/white]")
+    console.print("  [white]the output is automatically copied directly to your clipboard.[/white]\n")
+    
+    console.print("[bold yellow]Usage:[/bold yellow]")
+    console.print("  [bold green]promptsmith[/bold green] [cyan][OPTIONS][/cyan] [magenta][PROMPT][/magenta]\n")
+    
+    console.print("[bold yellow]Options & Arguments:[/bold yellow]")
+    opt_table = Table(box=None, show_header=False, padding=(0, 2))
+    opt_table.add_column("Option", style="bold green", width=25)
+    opt_table.add_column("Description", style="white")
+    
+    opt_table.add_row("[magenta]PROMPT[/magenta]", "Optional raw prompt text. If omitted, PromptSmith reads interactively.")
+    opt_table.add_row("-s, --style TEXT", "Format style to apply (e.g., [cyan]math[/cyan] [default], [cyan]general[/cyan], [cyan]code[/cyan]).")
+    opt_table.add_row("-p, --print", "Print to console/stdout instead of copying to clipboard.")
+    opt_table.add_row("-f, --file PATH", "Path to a text file containing the raw prompt.")
+    opt_table.add_row("-c, --config PATH", "Path to a custom config.toml file.")
+    opt_table.add_row("-l, --list-styles", "List all registered prompt styles and exit.")
+    opt_table.add_row("-h, --help", "Show this help menu and exit.")
+    opt_table.add_row("--version", "Show application version and developer info.")
+    opt_table.add_row("--verbose", "Enable debug logging to standard error.")
+    
+    console.print(opt_table)
+    console.print()
+    
+    console.print("[bold yellow]Examples:[/bold yellow]")
+    console.print("  • [italic]Interactive mode (captures multiline pasting):[/italic]")
+    console.print("    [bold green]promptsmith[/bold green]")
+    console.print("  • [italic]Format prompt in default math mode and print to terminal:[/italic]")
+    console.print("    [bold green]promptsmith[/bold green] -p [magenta]\"Solve x^2 + 5x + 6 = 0\"[/magenta]")
+    console.print("  • [italic]Format using the code template and copy to clipboard:[/italic]")
+    console.print("    [bold green]promptsmith[/bold green] -s code [magenta]\"Write a quicksort function\"[/magenta]")
+    console.print("  • [italic]Read raw prompt from file, apply general style, print to terminal:[/italic]")
+    console.print("    [bold green]promptsmith[/bold green] -f raw_prompt.txt -s general -p")
+    console.print("  • [italic]Pipe input from standard utilities:[/italic]")
+    console.print("    [bold green]cat[/bold green] raw.txt | [bold green]promptsmith[/bold green] -s general -p")
+    console.print()
+    
+    console.print("[bold yellow]Tips & Extensibility:[/bold yellow]")
+    console.print("  💡 [bold green]Clipboard:[/bold green] After formatting completes, paste the prompt in ChatGPT/Claude using [bold cyan]Ctrl+V[/bold cyan].")
+    console.print("  💡 [bold green]Custom Styles:[/bold green] Add your own templates by creating or editing the TOML config file at:")
+    console.print("     [yellow]%APPDATA%\\Local\\promptsmith\\promptsmith\\config.toml[/yellow]")
+
+@click.command(context_settings=dict(help_option_names=[]))
 @click.argument("prompt", required=False, type=str)
 @click.option(
     "-s",
@@ -62,6 +149,13 @@ error_console = Console(stderr=True)
     is_flag=True,
     help="Enable verbose output for debugging."
 )
+@click.option(
+    "-h",
+    "--help",
+    "show_help",
+    is_flag=True,
+    help="Show this help message and exit."
+)
 @click.version_option(
     version=__version__,
     prog_name="PromptSmith",
@@ -74,13 +168,28 @@ def cli(
     file: Optional[Path],
     config: Optional[Path],
     list_styles: bool,
-    verbose: bool
+    verbose: bool,
+    show_help: bool
 ) -> None:
     """
     PromptSmith: Prepare and format raw prompts for AI chatbots.
     
     If no prompt or file is provided, PromptSmith will read interactively from standard input.
     """
+    # Force UTF-8 encoding on standard streams to avoid encoding crashes on Windows
+    if sys.platform == "win32":
+        try:
+            if hasattr(sys.stdout, "reconfigure"):
+                sys.stdout.reconfigure(encoding="utf-8")
+            if hasattr(sys.stderr, "reconfigure"):
+                sys.stderr.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+    if show_help:
+        display_custom_help()
+        sys.exit(0)
+
     # 1. Setup logging
     setup_logger(verbose)
     logger.debug("PromptSmith started.")
@@ -97,6 +206,11 @@ def cli(
             display_styles(formatter)
             sys.exit(0)
             
+        # Show startup banner if not printing output directly or if running interactively
+        is_interactive = not prompt and not file and sys.stdin.isatty()
+        if not print_only or is_interactive:
+            show_startup_banner()
+
         # 4. Read the raw input prompt
         raw_prompt = get_raw_prompt(prompt, file)
         
@@ -117,11 +231,12 @@ def cli(
             with console.status("[bold green]Copying to clipboard...[/bold green]"):
                 copy_to_clipboard(formatted_prompt)
             console.print(Panel(
-                f"[bold green]Success![/bold green] Formatted prompt copied to the clipboard.\n"
-                f"Style applied: [bold cyan]{selected_style}[/bold cyan]\n"
-                f"You can now paste (Ctrl+V) it directly into your AI chatbot.",
-                title="[bold green]PromptSmith[/bold green]",
-                border_style="green"
+                f"✨ [bold green]Success![/bold green] Formatted prompt copied to your system clipboard.\n"
+                f"🎨 Style applied: [bold cyan]{selected_style}[/bold cyan]\n"
+                f"📋 Press [bold yellow]Ctrl+V[/bold yellow] (or Cmd+V) to paste directly into your chatbot.",
+                title="[bold green]✔ Prompt Prepared[/bold green]",
+                border_style="green",
+                padding=(1, 2)
             ))
         else:
             # Print to stdout
@@ -159,10 +274,11 @@ def get_raw_prompt(prompt_arg: Optional[str], file_path: Optional[Path]) -> str:
     # Interactive input
     eof_key = "Ctrl+Z then Enter" if os.name == "nt" else "Ctrl+D"
     console.print(Panel(
-        "[bold cyan]Interactive Raw Prompt Input[/bold cyan]\n"
-        f"Enter or paste your raw prompt. Press [bold green]{eof_key}[/bold green] on a new line to finish.",
-        title="[bold yellow]PromptSmith[/bold yellow]",
-        border_style="cyan"
+        f"✍️  [bold cyan]Input Mode:[/] Type or paste your raw prompt below.\n"
+        f"⌨️  Press [bold yellow]{eof_key}[/] on a new line when you are done to process.",
+        title="[bold cyan]Interactive Prompt Input[/bold cyan]",
+        border_style="cyan",
+        padding=(1, 2)
     ))
     
     try:

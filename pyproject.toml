@@ -36,7 +36,8 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://indrajitghosh.onrender.com"
-Repository = "https://github.com/indrajitghosh/promptsmith"
+Repository = "https://github.com/indrajit912/PromptSmith"
+"Bug Tracker" = "https://github.com/indrajit912/PromptSmith/issues"
 
 [project.scripts]
 promptsmith = "promptsmith.cli:cli"
