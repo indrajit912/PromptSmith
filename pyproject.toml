@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promptsmith"
+version = "0.1.0"
+authors = [
+    { name = "Indrajit Ghosh", email = "indrajit.ghosh.pro@gmail.com" }
+]
+description = "A professional Python command-line tool to format and optimize prompts for AI chatbots."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "click>=8.0.0",
+    "rich>=12.0.0",
+    "pyperclip>=1.8.0",
+    "toml>=0.10.2",
+    "platformdirs>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://indrajitghosh.onrender.com"
+Repository = "https://github.com/indrajitghosh/promptsmith"
+
+[project.scripts]
+promptsmith = "promptsmith.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["promptsmith*"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
