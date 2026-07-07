@@ -46,3 +46,18 @@ def test_separator_lines():
     expected_segment = f"-----------\n{raw}\n-----------"
     assert expected_segment in formatted
 
+def test_new_styles_formatting():
+    formatter = PromptFormatter()
+    formatter.initialize()
+    raw = "Write an API for user authentication."
+    
+    # Test api style
+    formatted_api = formatter.format_prompt(raw, "api")
+    assert raw in formatted_api
+    assert "restful" in formatted_api.lower()
+    
+    # Test devops style
+    formatted_devops = formatter.format_prompt(raw, "devops")
+    assert raw in formatted_devops
+    assert "ci/cd" in formatted_devops.lower()
+

@@ -23,6 +23,10 @@ class StyleRegistry:
         self.register(MathStyle())
         self.register(CodeStyle())
         
+        from promptsmith.styles.builtins import BUILTIN_STYLES_DATA, BuiltinPromptStyle
+        for name, info in BUILTIN_STYLES_DATA.items():
+            self.register(BuiltinPromptStyle(name, info["description"], info["template"]))
+        
     def register(self, style: PromptStyle, override: bool = False) -> None:
         """
         Registers a prompt style.

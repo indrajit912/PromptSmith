@@ -37,3 +37,8 @@ class PromptFormatter:
         """
         style = self.get_style(style_name)
         return style.format(raw_prompt)
+
+    def get_canvas_path(self) -> Path:
+        """Returns the default filepath for the temporary prompt canvas."""
+        from promptsmith.config import get_default_canvas_path
+        return get_default_canvas_path()

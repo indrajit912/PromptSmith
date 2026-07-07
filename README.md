@@ -105,11 +105,15 @@ If you would like to contribute or run local modifications:
 
 Once installed, the `promptsmith` command will be available on your system path.
 
-### 1. Interactive Multi-line Capture (Default)
-Run `promptsmith` without arguments. PromptSmith will open an interactive prompt allowing you to type or paste any multi-line raw string. Press `Ctrl+Z` then `Enter` (on Windows) or `Ctrl+D` (on Linux/macOS) on a new line to process it:
+### 1. Editor-Based Input Canvas (Default)
+Run `promptsmith` without arguments. PromptSmith will reset a temporary prompt canvas file (`canvas.txt`), populate it with a default informational header, and automatically launch your configured editor (falls back to `vim` if not set):
 ```bash
 promptsmith
 ```
+Write your prompt below the comments inside the editor, save, and exit. PromptSmith will filter out comment lines starting with `#` and empty lines, process the remaining text, and copy the optimized prompt to your clipboard (or print if `-p` is passed). The canvas file is cleared immediately after.
+
+> [!NOTE]
+> Entering prompts interactively inside the terminal is no longer supported.
 
 ### 2. Outputting directly to Terminal instead of Clipboard
 By default, the processed prompt is copied to the clipboard. Use the `-p` / `--print` flag to output directly to the terminal:
@@ -128,7 +132,7 @@ promptsmith -s code "write a standard bin search in rust"
 ```
 
 ### 4. Reading from a File
-Read a raw prompt from a local text file and copy the result:
+Read a raw prompt from a local text file and copy the result. This does **not** launch an editor or modify the target file:
 ```bash
 promptsmith -f input_prompt.txt
 ```
@@ -147,9 +151,62 @@ promptsmith --list-styles
 
 ---
 
+## Prompt Styling System
+
+PromptSmith supports a rich ecosystem of built-in formatting styles tailored to specific engineering, development, and writing tasks. Selecting the appropriate style allows the AI chatbot to provide higher quality, more structured responses.
+
+### Purpose of Styles
+When you format a prompt, PromptSmith wraps your raw prompt in a set of specialized instructions. For example:
+- The `math` style instructs the chatbot to output mathematical notation in plain LaTeX syntax and use display or inline markers (`$$...$$` or `$...$`).
+- The `debug` style instructs the chatbot to isolate coding bugs, explain the root cause, and verify fixes.
+- The `security` style instructs the chatbot to check for secure coding patterns and vulnerability remediations.
+
+---
+
+### Built-in Styles Registry
+
+Here is the complete list of built-in styles available in PromptSmith:
+
+| Style | Intended Use Case | Example Command |
+| :--- | :--- | :--- |
+| `math` [Default] | LaTeX equations, mathematical proofs, and logical notation | `promptsmith -s math "solve x^2 + y^2 = r^2"` |
+| `general` | General purpose grammar check, clarity flow, and phrasing polish | `promptsmith -s general -f email_draft.txt` |
+| `code` | Modular, well-commented code following modern best practices | `promptsmith -s code "write quicksort in go"` |
+| `technical` | Systems engineering, architecture design, and RFC documentation | `promptsmith -s technical "explain raft consensus"` |
+| `debug` | Exception handling, stack traces, and fixing code bugs | `promptsmith -s debug -f traceback.txt -p` |
+| `review` | Critique code quality, readability, security, and styling | `promptsmith -s review "critique this class implementation"` |
+| `refactor` | Clean up, modernize, and modularize code blocks | `promptsmith -s refactor "modernize this legacy code"` |
+| `documentation` | Writing READMEs, API references, docstrings, and user guides | `promptsmith -s documentation "write readme for rust api"` |
+| `research` | Deep comparative analysis, literature summary, and reports | `promptsmith -s research "compare postgresql vs mongodb"` |
+| `academic` | Scholarly writing, formal thesis construction, and proofs | `promptsmith -s academic "proof that sqrt(2) is irrational"` |
+| `cli` | Shell scripts, cmd scripts, utilities, and command explanations | `promptsmith -s cli "find files modified in last 7 days"` |
+| `api` | RESTful endpoints, payload structures, HTTP statuses, and SDKs | `promptsmith -s api "design auth endpoint payload"` |
+| `testing` | Unit tests, mock objects, integration test plans, and boundaries | `promptsmith -s testing "test case for login validator"` |
+| `security` | Security audits, OWASP compliance, and threat mitigation | `promptsmith -s security "remediate sql injection vulnerabilities"` |
+| `performance` | Optimizing memory footprints, cpu cycles, and profiling | `promptsmith -s performance "profile and speed up this query"` |
+| `devops` | Dockerfiles, k8s configurations, CI/CD pipelines, and IaC | `promptsmith -s devops "github actions workflow to build docker image"` |
+| `data` | Database design, SQL query optimizations, and data analysis | `promptsmith -s data "optimize this nested join query"` |
+| `writing` | Copywriting editing, content polishing, and target audience tone | `promptsmith -s writing "refine this draft for junior devs"` |
+| `creative` | Storytelling, brainstorming layout options, and prose | `promptsmith -s creative "brainstorm 5 domain name ideas"` |
+
+---
+
+### Selecting a Style
+To select a style, use the `-s` or `--style` option:
+```bash
+promptsmith -s security -p "review this user input parser"
+```
+
+To list all registered styles currently active on your system (including your custom styles from `config.toml`), run:
+```bash
+promptsmith --list-styles
+```
+
+---
+
 ## Configuration & Extensibility
 
-PromptSmith is designed with future customization in mind. It checks for configuration in:
+PromptSmith is designed with customization in mind. It checks for configuration in:
 1. The standard system directory (`%APPDATA%/Local/promptsmith/config.toml` on Windows, or `~/.config/promptsmith/config.toml` on Unix).
 2. A local fallback in the user's home folder `~/.promptsmith.toml`.
 
@@ -159,11 +216,14 @@ If no configuration file is found on startup, PromptSmith automatically creates 
 
 ```toml
 [settings]
-# Change the default style from 'general' to another style
-default_style = "general"
+# Change the default style from 'math' to another style
+default_style = "math"
 
 # Set to false if you want the app to print to stdout by default instead of copying
 default_to_clipboard = true
+
+# Configure your preferred editor to write prompts (e.g. "vim", "notepad", "code --wait", "nano")
+editor = "vim"
 
 # Define your own custom styles here!
 [styles.marketing]
@@ -171,9 +231,9 @@ description = "Optimize prompt for copywriting, ads, and marketing material"
 template = """
 Rewrite the following prompt for an AI chatbot.
 
-=== RAW PROMPT ===
+-----------
 RAW_PROMPT
-==================
+-----------
 
 Please rewrite the prompt to optimize it for engaging copywriting. Make sure the chatbot outputs hooks, bulleted benefits, and a clear call-to-action (CTA).
 """

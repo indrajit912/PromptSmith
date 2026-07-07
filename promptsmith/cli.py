@@ -18,6 +18,7 @@ from promptsmith.formatter import PromptFormatter
 from promptsmith.exceptions import PromptSmithError, InputError
 from promptsmith.utils.logger import setup_logger, logger
 from promptsmith.utils.clipboard import copy_to_clipboard
+from promptsmith.canvas import CanvasManager, launch_editor
 
 # Initialize global rich console for pretty CLI output
 console = Console()
@@ -79,11 +80,11 @@ def display_custom_help() -> None:
     opt_table.add_column("Option", style="bold green", width=25)
     opt_table.add_column("Description", style="white")
     
-    opt_table.add_row("[magenta]PROMPT[/magenta]", "Optional raw prompt text. If omitted, PromptSmith reads interactively.")
+    opt_table.add_row("[magenta]PROMPT[/magenta]", "Optional raw prompt text. If omitted, PromptSmith opens the editor canvas.")
     opt_table.add_row("-s, --style TEXT", "Format style to apply (e.g., [cyan]math[/cyan] [default], [cyan]general[/cyan], [cyan]code[/cyan]).")
     opt_table.add_row("-p, --print", "Print to console/stdout instead of copying to clipboard.")
     opt_table.add_row("-f, --file PATH", "Path to a text file containing the raw prompt.")
-    opt_table.add_row("-c, --config PATH", "Path to a custom config.toml file.")
+    opt_table.add_row("-c, --config [PATH]", "Path to a custom config.toml, or edit active config directly if PATH is omitted.")
     opt_table.add_row("-l, --list-styles", "List all registered prompt styles and exit.")
     opt_table.add_row("-h, --help", "Show this help menu and exit.")
     opt_table.add_row("--version", "Show application version and developer info.")
@@ -93,7 +94,7 @@ def display_custom_help() -> None:
     console.print()
     
     console.print("[bold yellow]Examples:[/bold yellow]")
-    console.print("  • [italic]Interactive mode (captures multiline pasting):[/italic]")
+    console.print("  • [italic]Canvas mode (opens configured editor):[/italic]")
     console.print("    [bold green]promptsmith[/bold green]")
     console.print("  • [italic]Format prompt in default math mode and print to terminal:[/italic]")
     console.print("    [bold green]promptsmith[/bold green] -p [magenta]\"Solve x^2 + 5x + 6 = 0\"[/magenta]")
@@ -110,7 +111,30 @@ def display_custom_help() -> None:
     console.print("  💡 [bold green]Custom Styles:[/bold green] Add your own templates by creating or editing the TOML config file at:")
     console.print("     [yellow]%APPDATA%\\Local\\promptsmith\\promptsmith\\config.toml[/yellow]")
 
-@click.command(context_settings=dict(help_option_names=[]))
+class CustomCommand(click.Command):
+    """Custom Click Command to intercept optional value for --config flag."""
+    def parse_args(self, ctx, args):
+        new_args = []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            if arg in ("-c", "--config"):
+                # Check if there is a next argument and it doesn't start with '-'
+                if i + 1 < len(args) and not args[i+1].startswith("-"):
+                    new_args.append(arg)
+                    new_args.append(args[i+1])
+                    i += 2
+                else:
+                    # No value provided, insert our sentinel
+                    new_args.append(arg)
+                    new_args.append("EDIT_CONFIG")
+                    i += 1
+            else:
+                new_args.append(arg)
+                i += 1
+        return super().parse_args(ctx, new_args)
+
+@click.command(cls=CustomCommand, context_settings=dict(help_option_names=[]))
 @click.argument("prompt", required=False, type=str)
 @click.option(
     "-s",
@@ -190,6 +214,27 @@ def cli(
         display_custom_help()
         sys.exit(0)
 
+    if config and str(config) == "EDIT_CONFIG":
+        try:
+            from promptsmith.config import Configuration, create_default_config
+            config_obj = Configuration()
+            config_path = config_obj.config_path
+            
+            # Create config file with default values if it doesn't exist
+            if not config_path.exists():
+                create_default_config(config_path)
+                
+            config_obj.load()
+            editor_cmd = config_obj.settings.get("editor", "vim")
+            
+            console.print(f"[bold cyan]Opening configuration file in editor ({editor_cmd})...[/bold cyan]")
+            launch_editor(editor_cmd, config_path)
+            console.print("[bold green]Configuration updated successfully.[/bold green]")
+            sys.exit(0)
+        except Exception as e:
+            error_console.print(f"[bold red]Error editing configuration:[/] {e}")
+            sys.exit(1)
+
     # 1. Setup logging
     setup_logger(verbose)
     logger.debug("PromptSmith started.")
@@ -212,7 +257,7 @@ def cli(
             show_startup_banner()
 
         # 4. Read the raw input prompt
-        raw_prompt = get_raw_prompt(prompt, file)
+        raw_prompt = get_raw_prompt(prompt, file, formatter)
         
         # 5. Format the prompt
         selected_style = style or formatter.config.settings.get("default_style", "general")
@@ -252,9 +297,17 @@ def cli(
         logger.exception("An unexpected error occurred:")
         error_console.print(f"[bold red]Unexpected Error:[/bold red] {e}")
         sys.exit(1)
+    finally:
+        is_interactive = not prompt and not file and sys.stdin.isatty()
+        if is_interactive:
+            try:
+                from promptsmith.config import get_default_canvas_path
+                CanvasManager(get_default_canvas_path()).reset()
+            except Exception:
+                pass
 
-def get_raw_prompt(prompt_arg: Optional[str], file_path: Optional[Path]) -> str:
-    """Retrieves raw prompt from file, args, piped stdin, or interactive terminal."""
+def get_raw_prompt(prompt_arg: Optional[str], file_path: Optional[Path], formatter: PromptFormatter) -> str:
+    """Retrieves raw prompt from file, args, piped stdin, or editor canvas."""
     if file_path:
         try:
             logger.debug(f"Reading prompt from file: {file_path}")
@@ -271,28 +324,21 @@ def get_raw_prompt(prompt_arg: Optional[str], file_path: Optional[Path]) -> str:
         logger.debug("Reading prompt from piped stdin.")
         return sys.stdin.read()
         
-    # Interactive input
-    eof_key = "Ctrl+Z then Enter" if os.name == "nt" else "Ctrl+D"
-    console.print(Panel(
-        f"✍️  [bold cyan]Input Mode:[/] Type or paste your raw prompt below.\n"
-        f"⌨️  Press [bold yellow]{eof_key}[/] on a new line when you are done to process.",
-        title="[bold cyan]Interactive Prompt Input[/bold cyan]",
-        border_style="cyan",
-        padding=(1, 2)
-    ))
+    # Editor-based workflow
+    canvas_path = formatter.get_canvas_path()
+    editor_cmd = formatter.config.settings.get("editor", "vim")
     
-    try:
-        lines = []
-        while True:
-            line = input()
-            lines.append(line)
-    except EOFError:
-        pass
-        
-    raw_prompt = "\n".join(lines)
-    if not raw_prompt.strip():
-        raise InputError("Raw prompt cannot be empty. Please provide a prompt or use --help.")
-    return raw_prompt
+    manager = CanvasManager(canvas_path)
+    
+    # 1. Reset canvas file and populate default header
+    manager.reset()
+    
+    # 2. Launch editor
+    console.print(f"[bold cyan]Launching editor ({editor_cmd}) to write prompt...[/bold cyan]")
+    launch_editor(editor_cmd, canvas_path)
+    
+    # 3. Read prompt
+    return manager.read_prompt()
 
 def display_styles(formatter: PromptFormatter) -> None:
     """Displays available prompt styles in a beautiful table."""
@@ -302,7 +348,8 @@ def display_styles(formatter: PromptFormatter) -> None:
     table.add_column("Description", style="green")
     
     # We want to identify built-in vs user styles
-    builtins = {"general", "math", "code"}
+    from promptsmith.styles.builtins import BUILTIN_STYLES_DATA
+    builtins = {"general", "math", "code"} | set(BUILTIN_STYLES_DATA.keys())
     
     for style in formatter.registry.list_styles():
         source = "Built-in" if style.name in builtins else "Custom (Config)"

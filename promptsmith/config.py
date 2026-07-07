@@ -23,6 +23,10 @@ def get_default_config_path() -> Path:
     """Returns the default filepath for configuration."""
     return get_default_config_dir() / DEFAULT_CONFIG_FILENAME
 
+def get_default_canvas_path() -> Path:
+    """Returns the default filepath for the temporary prompt canvas."""
+    return get_default_config_dir() / "canvas.txt"
+
 def create_default_config(config_path: Path) -> None:
     """
     Creates a default configuration file with examples.
@@ -39,6 +43,9 @@ default_style = "math"
 
 # Whether to copy to clipboard by default (set to false to default to printing)
 default_to_clipboard = true
+
+# The preferred text editor to launch for writing prompts (e.g., "vim", "notepad", "code --wait")
+editor = "vim"
 
 # Define custom prompt styles here.
 # The template MUST contain the exact string 'RAW_PROMPT' somewhere.
@@ -90,7 +97,8 @@ class Configuration:
                 
         self.settings: Dict[str, Any] = {
             "default_style": "math",
-            "default_to_clipboard": True
+            "default_to_clipboard": True,
+            "editor": "vim"
         }
         self.custom_styles: Dict[str, Dict[str, str]] = {}
         
@@ -120,6 +128,8 @@ class Configuration:
                     self.settings["default_style"] = str(settings_data["default_style"]).strip()
                 if "default_to_clipboard" in settings_data:
                     self.settings["default_to_clipboard"] = bool(settings_data["default_to_clipboard"])
+                if "editor" in settings_data:
+                    self.settings["editor"] = str(settings_data["editor"]).strip()
                     
             # Parse custom styles
             if "styles" in data:

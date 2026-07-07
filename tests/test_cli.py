@@ -3,6 +3,7 @@ Tests for Command Line Interface using click.testing.CliRunner.
 """
 
 import pytest
+from unittest.mock import patch
 from click.testing import CliRunner
 from promptsmith.cli import cli
 
@@ -43,4 +44,14 @@ def test_cli_custom_help():
     assert "PROMPTSMITH" in result.output
     assert "Options & Arguments" in result.output
     assert "Examples" in result.output
+
+@patch("promptsmith.cli.launch_editor")
+@patch("promptsmith.config.get_default_config_path")
+def test_cli_edit_config(mock_get_config_path, mock_launch_editor, tmp_path):
+    runner = CliRunner()
+    mock_get_config_path.return_value = tmp_path / "config.toml"
+    result = runner.invoke(cli, ["--config"])
+    assert result.exit_code == 0
+    mock_launch_editor.assert_called_once()
+    assert (tmp_path / "config.toml").exists()
 

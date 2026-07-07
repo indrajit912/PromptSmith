@@ -39,3 +39,14 @@ def test_registry_not_found():
     registry = StyleRegistry()
     with pytest.raises(StyleNotFoundError):
         registry.get("non-existent")
+
+def test_registry_new_styles():
+    registry = StyleRegistry()
+    names = registry.list_names()
+    assert "technical" in names
+    assert "debug" in names
+    assert "security" in names
+    
+    style = registry.get("security")
+    assert style.name == "security"
+    assert "vulnerability" in style.description.lower()
