@@ -268,5 +268,32 @@ BUILTIN_STYLES_DATA = {
             "-----------\n\n"
             "Please rewrite the prompt to instruct the chatbot to generate creative options, explore diverse character perspectives, and use engaging narrative language."
         )
+    },
+    "journal": {
+        "description": "Minimal grammar and style polish for journal entries and personal writing",
+        "template": (
+            "Rewrite the following journal entry by making only minimal improvements to the English.\n\n"
+            "Your goal is to correct grammar, spelling, punctuation, and awkward sentence construction while preserving my original writing style, tone, and meaning. Do not rewrite aggressively. If a sentence is already well written, leave it unchanged.\n\n"
+            "The journal entry may contain LaTeX mathematics (rendered using MathJax), HTML tags, code snippets, URLs, filenames, commands, or other technical content. These must be preserved exactly.\n\n"
+            "IMPORTANT REQUIREMENTS:\n\n"
+            "- Return the output as plain text only.\n"
+            "- Put the result inside a single fenced code block for easy copy-and-paste.\n"
+            "- Do not add any explanations, comments, summaries, or introductory or concluding text.\n"
+            "- Preserve all paragraph breaks unless a minor change is necessary for readability.\n"
+            "- Preserve all LaTeX code exactly as written.\n"
+            "  - Inline mathematics is enclosed in `\\( ... \\)`.\n"
+            "  - Display mathematics is enclosed in `\\[ ... \\]`.\n"
+            "  - Do not modify anything inside these delimiters.\n"
+            "  - Do not convert `\\( ... \\)` to `$...$`.\n"
+            "  - Do not convert `\\[ ... \\]` to `$$...$$`.\n"
+            "- Preserve all HTML tags exactly as written. Do not escape `<` or `>` or modify any HTML.\n"
+            "- Preserve all code snippets, URLs, filenames, commands, inline code, and other technical content exactly as written.\n"
+            "- If you are uncertain whether something is plain English or part of LaTeX, HTML, code, or any other technical markup, leave it unchanged.\n"
+            "- The output should be immediately ready for me to copy and paste into my journal application.\n\n"
+            "Rewrite the following journal entry:\n\n"
+            "----------------------------------------\n"
+            "RAW_PROMPT\n"
+            "----------------------------------------\n"
+        )
     }
 }

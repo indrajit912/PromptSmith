@@ -46,7 +46,12 @@ def test_registry_new_styles():
     assert "technical" in names
     assert "debug" in names
     assert "security" in names
+    assert "journal" in names
     
     style = registry.get("security")
     assert style.name == "security"
     assert "vulnerability" in style.description.lower()
+
+    journal_style = registry.get("journal")
+    assert journal_style.name == "journal"
+    assert "journal entry" in journal_style.template.lower()
